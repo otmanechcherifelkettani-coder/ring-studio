@@ -342,6 +342,7 @@ function buildSetting(stone, Ri) {
       g.add(prong);
     }
   } else if (state.setting === 'halo') {
+    const headMetal = metal.clone(); headMetal.envMapIntensity = 2.1; headMetal.roughness = Math.min(0.5, (metal.roughness||0.3) + 0.12);
     gy = bandTopY + 0.6 + hp * 0.8;
     g.userData.gyLocal = gy;
     stoneMesh.position.y = gy;
@@ -359,11 +360,12 @@ function buildSetting(stone, Ri) {
       s.scale.y = 0.7;
       g.add(s);
     }
-    const plate = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.98 + sr * 0.35, ext * 0.42, 1.3, 48), metal);
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.98 + sr * 0.35, ext * 0.42, 1.3, 48), headMetal);
     plate.position.y = gy - 0.06 * d - 0.62;
     plate.castShadow = true;
     g.add(plate);
   } else { // bezel
+    const headMetal = metal.clone(); headMetal.envMapIntensity = 2.1; headMetal.roughness = Math.min(0.5, (metal.roughness||0.3) + 0.12);
     gy = bandTopY + 0.3 + hp * 0.75;
     g.userData.gyLocal = gy;
     stoneMesh.position.y = gy;
@@ -386,7 +388,7 @@ function buildSetting(stone, Ri) {
     rim.castShadow = true;
     g.add(rim);
     const ext = maxExtent(outline);
-    const cup = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.86, ext * 0.38, hp * 0.7 + 0.9, 48), metal);
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.86, ext * 0.38, hp * 0.7 + 0.9, 48), headMetal);
     cup.position.y = gy - hp * 0.45 - 0.35;
     cup.castShadow = true;
     g.add(cup);
