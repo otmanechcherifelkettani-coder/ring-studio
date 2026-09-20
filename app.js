@@ -97,13 +97,13 @@ function metalMaterial() {
 }
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 0, roughness: 0.02,
-    transmission: 1.0, thickness: 4.0, ior: 2.417,
-    clearcoat: 1.0, clearcoatRoughness: 0.02,
-    specularIntensity: 1.0, envMapIntensity: 2.2,
+    color: 0xf6f8ff, metalness: 0, roughness: 0.05,
+    transmission: 0.82, thickness: 1.6, ior: 2.417,
+    clearcoat: 1.0, clearcoatRoughness: 0.03,
+    specularIntensity: 1.25, envMapIntensity: 3.0,
     flatShading: true,
   });
-  if ('dispersion' in mat) mat.dispersion = 4.0; // subtle rainbow fire where supported
+  if ('dispersion' in mat) mat.dispersion = 6.0; // subtle rainbow fire where supported
   return mat;
 }
 
@@ -327,8 +327,8 @@ function rebuild() {
   ringGroup.rotation.x = Math.PI / 2; // torus axis toward camera, stone to +Z
   const wrap = new THREE.Group();
   wrap.add(ringGroup);
-  wrap.rotation.x = -0.34; // tilt back: stone rises to the top of the frame
-  wrap.rotation.y = 0.22;
+  wrap.rotation.x = -0.46; // tilt back: stone rises to the top of the frame
+  wrap.rotation.y = 0.06;
   wrap.position.y = Ri + BAND_T + 0.25;
   ringGroup = wrap;
   scene.add(ringGroup);
