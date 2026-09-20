@@ -59,28 +59,30 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(32, 1, 1, 500);
-camera.position.set(26, 20, 34);
+camera.position.set(33, 25, 47);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.autoRotate = true;
 controls.autoRotateSpeed = 1.1;
-controls.minDistance = 18;
-controls.maxDistance = 90;
+controls.minDistance = 24;
+controls.maxDistance = 120;
 
 const key = new THREE.DirectionalLight(0xffffff, 1.6);
-key.position.set(14, 22, 10);
+key.position.set(8, 30, 14);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
-key.shadow.radius = 8;
+key.shadow.radius = 14;
 key.shadow.bias = -0.0004;
+Object.assign(key.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 5, far: 80 });
+key.shadow.camera.updateProjectionMatrix();
 scene.add(key);
 scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
 const shadowPlane = new THREE.Mesh(
   new THREE.PlaneGeometry(300, 300),
-  new THREE.ShadowMaterial({ opacity: 0.16 })
+  new THREE.ShadowMaterial({ opacity: 0.13 })
 );
 shadowPlane.rotation.x = -Math.PI / 2;
 shadowPlane.receiveShadow = true;

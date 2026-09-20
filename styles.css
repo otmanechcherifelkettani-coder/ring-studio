@@ -29,9 +29,9 @@ body {
   display: grid;
   grid-template-columns: 1fr 340px;
   gap: 0;
-  min-height: 62vh;
+  align-items: start;
 }
-.stage { position: relative; }
+.stage { position: sticky; top: 0; height: calc(100vh - 61px); }
 #viewer { position: absolute; inset: 0; cursor: grab; }
 #viewer:active { cursor: grabbing; }
 .summary {
