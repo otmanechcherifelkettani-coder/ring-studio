@@ -41,7 +41,7 @@ const container = document.getElementById('viewer');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = 1.06;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
@@ -52,7 +52,7 @@ scene.background = new THREE.Color(0xf6f4ef);
 // jewelry-studio environment: dark room, bright strip softboxes -> crisp facet fire
 function studioEnv() {
   const s = new THREE.Scene();
-  s.background = new THREE.Color(0x040404);
+  s.background = new THREE.Color(0x0c0c0c);
   const geo = new THREE.PlaneGeometry(1, 1);
   function panel(w, h, x, y, z, i) {
     const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(i, i, i), side: THREE.DoubleSide }));
@@ -60,16 +60,16 @@ function studioEnv() {
   }
   panel(30, 7, -20, 9, -6, 7.0);  // left strip softbox
   panel(30, 7,  20, 7,  8, 6.0);  // right strip softbox
-  panel(22, 22,  0, 26, 2, 3.2);  // overhead softbox
-  panel(12, 4,   0, 1, 22, 1.1);  // front fill card
-  panel(8, 8,  -12, -16, 10, 0.9);
+  panel(26, 26,  0, 26, 2, 4.6);  // overhead softbox
+  panel(18, 8,   0, 2, 22, 2.4);  // front fill card
+  panel(14, 14,  -12, -16, 10, 1.8);
   return s;
 }
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(studioEnv(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(30, 1, 1, 500);
-camera.position.set(22, 17, 36);
+camera.position.set(30, 21, 46);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -80,7 +80,7 @@ controls.minDistance = 20;
 controls.maxDistance = 110;
 controls.enablePan = false;
 
-const key = new THREE.DirectionalLight(0xffffff, 1.25);
+const key = new THREE.DirectionalLight(0xffffff, 1.5);
 key.position.set(8, 30, 14);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
@@ -89,7 +89,7 @@ key.shadow.bias = -0.0004;
 Object.assign(key.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 5, far: 80 });
 key.shadow.camera.updateProjectionMatrix();
 scene.add(key);
-scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+scene.add(new THREE.AmbientLight(0xfff8ee, 0.32));
 
 const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.ShadowMaterial({ opacity: 0.15 }));
 shadowPlane.rotation.x = -Math.PI / 2;
@@ -99,18 +99,18 @@ scene.add(shadowPlane);
 /* ---------------- materials ---------------- */
 function metalMaterial() {
   const m = METALS[state.metal];
-  return new THREE.MeshPhysicalMaterial({ color: m.color, metalness: 1.0, roughness: m.roughness, envMapIntensity: 1.35 });
+  return new THREE.MeshPhysicalMaterial({ color: m.color, metalness: 1.0, roughness: m.roughness, envMapIntensity: 1.55 });
 }
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff, metalness: 0, roughness: 0.0,
-    transmission: 0.95, thickness: 3.0, ior: 2.417,
+    transmission: 0.9, thickness: 1.8, ior: 2.417,
     clearcoat: 1.0, clearcoatRoughness: 0.0,
-    specularIntensity: 1.0, envMapIntensity: 2.0,
+    specularIntensity: 1.0, envMapIntensity: 3.2,
     attenuationColor: 0xf6f8ff, attenuationDistance: 6.0,
     flatShading: true,
   });
-  if ('dispersion' in mat) mat.dispersion = 8.0;
+  if ('dispersion' in mat) mat.dispersion = 2.5;
   return mat;
 }
 
