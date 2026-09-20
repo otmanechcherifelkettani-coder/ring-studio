@@ -222,9 +222,8 @@ function buildBrilliantGeo(shape, R, hc, hp) {
   }
   for (let j = 0; j < 16; j++) {
     const j1 = (j + 1) % 16;
-    const lk = Math.floor(j / 2);                    // L index near this girdle segment
-    const lA = (j % 2 === 0) ? (lk + 7) % 8 : lk;    // alternate which L apex
-    tri(G(j), G(j1), L(lA));                         // lower girdle
+    const lk = Math.floor(j / 2);                    // L apex nearest this girdle segment
+    tri(G(j), G(j1), L(lk));                         // lower girdle
   }
   for (let k = 0; k < 8; k++) {
     tri(L(k), L((k + 1) % 8), C);                    // pavilion mains
