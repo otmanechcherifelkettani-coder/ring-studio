@@ -97,13 +97,13 @@ function metalMaterial() {
 }
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
-    color: 0xf6f8ff, metalness: 0, roughness: 0.05,
-    transmission: 0.82, thickness: 1.6, ior: 2.417,
-    clearcoat: 1.0, clearcoatRoughness: 0.03,
-    specularIntensity: 1.25, envMapIntensity: 3.0,
+    color: 0xf2f5fc, metalness: 0.05, roughness: 0.08,
+    transmission: 0.72, thickness: 2.2, ior: 2.417,
+    clearcoat: 1.0, clearcoatRoughness: 0.04,
+    specularIntensity: 1.4, envMapIntensity: 3.6,
     flatShading: true,
   });
-  if ('dispersion' in mat) mat.dispersion = 6.0; // subtle rainbow fire where supported
+  if ('dispersion' in mat) mat.dispersion = 7.0; // subtle rainbow fire where supported
   return mat;
 }
 
@@ -246,22 +246,24 @@ function buildSetting(stone, Ri) {
     stoneMesh.position.y = bandTopY + lift + 0.50 * d;
     g.add(stoneMesh);
     const nProngs = (state.shape === 'round' && state.carat >= 1.5) ? 6 : 4;
-    const prongR = Math.max(0.26, d * 0.045);
+    const prongR = Math.max(0.24, d * 0.04);
+    const gy = stoneMesh.position.y; // girdle height
     for (let i = 0; i < nProngs; i++) {
       const a = (i / nProngs) * Math.PI * 2 + Math.PI / nProngs;
-      const bottom = new THREE.Vector3(Math.cos(a) * r * 0.35, bandTopY + lift - 0.9, Math.sin(a) * r * 0.35);
-      const top = new THREE.Vector3(Math.cos(a) * r * 0.97, stoneMesh.position.y + 0.13 * d, Math.sin(a) * r * 0.97);
-      const len = bottom.distanceTo(top);
-      const prong = new THREE.Mesh(new THREE.CylinderGeometry(prongR * 0.75, prongR, len, 10), metal);
-      prong.position.copy(bottom).add(top).multiplyScalar(0.5);
-      prong.lookAt(top);
-      prong.rotateX(Math.PI / 2);
+      const ca = Math.cos(a), sa = Math.sin(a);
+      // hug the pavilion, wrap over the crown edge - never tunnels through the stone
+      const curve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(ca * r * 0.55, gy - 0.34 * d, sa * r * 0.55),
+        new THREE.Vector3(ca * r * 1.06, gy - 0.02 * d, sa * r * 1.06),
+        new THREE.Vector3(ca * r * 0.60, gy + 0.19 * d, sa * r * 0.60)
+      );
+      const prong = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, prongR, 8, false), metal);
       prong.castShadow = true;
       g.add(prong);
     }
-    const seat = new THREE.Mesh(new THREE.TorusGeometry(r * 0.62, 0.32, 12, 48), metal);
+    const seat = new THREE.Mesh(new THREE.TorusGeometry(r * 0.66, 0.3, 12, 48), metal);
     seat.rotation.x = Math.PI / 2;
-    seat.position.y = bandTopY + lift - 0.2;
+    seat.position.y = gy - 0.16 * d;
     seat.castShadow = true;
     g.add(seat);
   } else if (state.setting === 'halo') {
