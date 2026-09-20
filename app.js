@@ -107,7 +107,7 @@ function stoneMaterial() {
   // thin transmissive shell
   const mat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff, metalness: 0, roughness: 0.0,
-    transmission: 1.0, thickness: 0.4, ior: 1.62,
+    transmission: 1.0, thickness: 0.4, ior: 1.5,
     clearcoat: 1.0, clearcoatRoughness: 0.0,
     specularIntensity: 1.0, envMapIntensity: 2.4,
     flatShading: true,
@@ -118,8 +118,8 @@ function stoneMaterial() {
 function stoneCoreMaterial() {
   // fake total internal reflection: bright faceted metallic core
   return new THREE.MeshPhysicalMaterial({
-    color: 0xe8edf6, metalness: 1.0, roughness: 0.06,
-    envMapIntensity: 2.4, flatShading: true,
+    color: 0xffffff, metalness: 1.0, roughness: 0.02,
+    envMapIntensity: 4.5, flatShading: true,
   });
 }
 
@@ -279,7 +279,7 @@ function buildStone() {
   const mesh = new THREE.Mesh(geo, stoneMaterial());
   mesh.castShadow = true;
   const core = new THREE.Mesh(geo, stoneCoreMaterial());
-  core.scale.setScalar(0.94);
+  core.scale.setScalar(0.90);
   mesh.add(core);
   return { mesh, d, R, hc, hp, outline: girdleOutline(state.shape, R) };
 }
