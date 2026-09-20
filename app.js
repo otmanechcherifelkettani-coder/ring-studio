@@ -104,16 +104,23 @@ function metalMaterial() {
   return new THREE.MeshPhysicalMaterial({ color: m.color, metalness: 1.0, roughness: m.roughness, envMapIntensity: 1.55 });
 }
 function stoneMaterial() {
+  // thin transmissive shell
   const mat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff, metalness: 0, roughness: 0.0,
-    transmission: 0.8, thickness: 2.5, ior: 2.417,
+    transmission: 1.0, thickness: 0.4, ior: 1.62,
     clearcoat: 1.0, clearcoatRoughness: 0.0,
-    specularIntensity: 1.1, envMapIntensity: 5.0,
-    attenuationColor: 0xe9efff, attenuationDistance: 8.0,
+    specularIntensity: 1.0, envMapIntensity: 2.4,
     flatShading: true,
   });
-  if ('dispersion' in mat) mat.dispersion = 2.5;
+  if ('dispersion' in mat) mat.dispersion = 2.0;
   return mat;
+}
+function stoneCoreMaterial() {
+  // fake total internal reflection: bright faceted metallic core
+  return new THREE.MeshPhysicalMaterial({
+    color: 0xe8edf6, metalness: 1.0, roughness: 0.06,
+    envMapIntensity: 2.4, flatShading: true,
+  });
 }
 
 /* ---------------- band ---------------- */
@@ -271,6 +278,9 @@ function buildStone() {
   }
   const mesh = new THREE.Mesh(geo, stoneMaterial());
   mesh.castShadow = true;
+  const core = new THREE.Mesh(geo, stoneCoreMaterial());
+  core.scale.setScalar(0.94);
+  mesh.add(core);
   return { mesh, d, R, hc, hp, outline: girdleOutline(state.shape, R) };
 }
 
