@@ -100,10 +100,11 @@ function metalMaterial() {
 }
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
-    color: 0xf2f5fc, metalness: 0.05, roughness: 0.08,
-    transmission: 0.72, thickness: 2.2, ior: 2.417,
-    clearcoat: 1.0, clearcoatRoughness: 0.04,
-    specularIntensity: 1.4, envMapIntensity: 3.6,
+    color: 0xffffff, metalness: 0.0, roughness: 0.02,
+    transmission: 0.9, thickness: 2.5, ior: 2.417,
+    clearcoat: 1.0, clearcoatRoughness: 0.02,
+    specularIntensity: 1.4, envMapIntensity: 2.8,
+    attenuationColor: 0xdfe9ff, attenuationDistance: 9.0,
     flatShading: true,
   });
   if ('dispersion' in mat) mat.dispersion = 7.0; // subtle rainbow fire where supported
@@ -126,6 +127,7 @@ function bandOutline(profile, Ri, w, t) {
     pts.push([w / 2, t]);
     pts.push([-w / 2, t]);
     for (let i = 1; i <= 3; i++) { const a = (i / 4) * Math.PI / 2; pts.push([-w / 2 + cr - Math.sin(a) * cr, t - cr + (1 - Math.cos(a)) * cr]); }
+    pts.push([-w / 2, 0]); // close the cross-section
   } else if (profile === 'court') {
     const n = 24;
     for (let i = 1; i <= n; i++) {
@@ -140,6 +142,7 @@ function bandOutline(profile, Ri, w, t) {
     pts.push([w / 2 - c, t]);
     pts.push([-w / 2 + c, t]);
     pts.push([-w / 2, t - c]);
+    pts.push([-w / 2, 0]); // close the cross-section
   }
   return pts;
 }
