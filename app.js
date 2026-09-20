@@ -359,8 +359,8 @@ function buildSetting(stone, Ri) {
       s.scale.y = 0.7;
       g.add(s);
     }
-    const plate = new THREE.Mesh(new THREE.CylinderGeometry(ext * 1.18 + sr * 0.6, ext * 0.6, 0.8, 48), metal);
-    plate.position.y = gy - 0.06 * d - 0.4;
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.98 + sr * 0.35, ext * 0.42, 1.3, 48), metal);
+    plate.position.y = gy - 0.06 * d - 0.62;
     plate.castShadow = true;
     g.add(plate);
   } else { // bezel
@@ -386,8 +386,8 @@ function buildSetting(stone, Ri) {
     rim.castShadow = true;
     g.add(rim);
     const ext = maxExtent(outline);
-    const cup = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.9, ext * 0.55, hp * 0.7 + 0.6, 48), metal);
-    cup.position.y = gy - hp * 0.45 - 0.2;
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.86, ext * 0.38, hp * 0.7 + 0.9, 48), metal);
+    cup.position.y = gy - hp * 0.45 - 0.35;
     cup.castShadow = true;
     g.add(cup);
   }
