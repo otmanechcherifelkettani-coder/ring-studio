@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ring Studio — design your ring in 3D</title>
+<meta name="description" content="Design a wedding or engagement ring in live 3D: metal, band profile, stone shape and size, setting. Then compare where to buy it.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Ring<span>Studio</span></div>
+  <div class="tagline">Design it. See it in 3D. Buy it right.</div>
+</header>
+
+<main class="layout">
+  <section class="stage">
+    <div id="viewer" aria-label="Live 3D ring preview"></div>
+    <div class="summary" id="summary"></div>
+    <div class="hint">Drag to rotate · scroll to zoom</div>
+  </section>
+
+  <aside class="panel">
+    <div class="group">
+      <h2>Metal</h2>
+      <div class="swatches" id="metal"></div>
+    </div>
+
+    <div class="group">
+      <h2>Band profile</h2>
+      <div class="segmented" id="profile"></div>
+      <h2 class="sub">Band width · <span id="widthVal"></span> mm</h2>
+      <input type="range" id="width" min="1.5" max="6" step="0.1" value="2.8">
+      <h2 class="sub">Ring size (US)</h2>
+      <div class="segmented small" id="ringsize"></div>
+    </div>
+
+    <div class="group">
+      <h2>Stone shape</h2>
+      <div class="segmented" id="shape"></div>
+      <h2 class="sub">Stone size · <span id="caratVal"></span> ct</h2>
+      <input type="range" id="carat" min="0.3" max="3" step="0.1" value="1">
+    </div>
+
+    <div class="group">
+      <h2>Setting</h2>
+      <div class="segmented" id="setting"></div>
+    </div>
+  </aside>
+</main>
+
+<section class="buy">
+  <div class="buy-head">
+    <h2>Where to buy this ring</h2>
+    <p class="note">Links jump straight into each jeweler's diamond search with your shape and size pre-applied. Prices are indicative 2026 guide ranges, not live quotes - always confirm on the vendor site.</p>
+  </div>
+  <div class="tablewrap">
+    <table id="vendorTable">
+      <thead>
+        <tr><th>Vendor</th><th>Your configuration</th><th>Indicative stone price*</th><th>Link type</th><th></th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="footnote" id="priceSource"></p>
+</section>
+
+<footer class="foot">
+  <span>v1 prototype · rendered live with Three.js · no images, everything is code</span>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
