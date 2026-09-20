@@ -106,10 +106,10 @@ function metalMaterial() {
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff, metalness: 0, roughness: 0.0,
-    transmission: 0.78, thickness: 2.4, ior: 2.417,
+    transmission: 0.85, thickness: 4.0, ior: 2.417,
     clearcoat: 1.0, clearcoatRoughness: 0.0,
-    specularIntensity: 1.1, envMapIntensity: 4.2,
-    attenuationColor: 0xf6f8ff, attenuationDistance: 6.0,
+    specularIntensity: 1.1, envMapIntensity: 5.0,
+    attenuationColor: 0xe9efff, attenuationDistance: 3.5,
     flatShading: true,
   });
   if ('dispersion' in mat) mat.dispersion = 2.5;
@@ -295,23 +295,23 @@ function buildSetting(stone, Ri) {
     stoneMesh.position.y = gy;
     g.add(stoneMesh);
     const nProngs = (state.shape === 'round' && state.carat >= 1.5) ? 6 : 4;
-    const prongR = Math.max(0.22, d * 0.035);
+    const prongR = Math.max(0.18, d * 0.028);
     const pr = extentAt(state.shape, R, 45);
     for (let i = 0; i < nProngs; i++) {
       const a = (i / nProngs) * Math.PI * 2 + Math.PI / nProngs;
       const ca = Math.cos(a), sa = Math.sin(a);
       const curve = new THREE.QuadraticBezierCurve3(
         new THREE.Vector3(ca * pr * 0.45, gy - hp * 0.8, sa * pr * 0.45),
-        new THREE.Vector3(ca * pr * 1.07, gy - 0.01 * d, sa * pr * 1.07),
-        new THREE.Vector3(ca * pr * 0.60, gy + hc + 0.02 * d, sa * pr * 0.60)
+        new THREE.Vector3(ca * pr * 1.06, gy - 0.01 * d, sa * pr * 1.06),
+        new THREE.Vector3(ca * pr * 0.90, gy + 0.10 * d, sa * pr * 0.90)
       );
       const prong = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, prongR, 8, false), metal);
       prong.castShadow = true;
       g.add(prong);
     }
-    const seat = new THREE.Mesh(new THREE.TorusGeometry(pr * 0.52, 0.28, 12, 48), metal);
+    const seat = new THREE.Mesh(new THREE.TorusGeometry(pr * 0.42, 0.22, 12, 48), metal);
     seat.rotation.x = Math.PI / 2;
-    seat.position.y = gy - hp * 0.55;
+    seat.position.y = gy - hp * 0.62;
     seat.castShadow = true;
     g.add(seat);
   } else if (state.setting === 'halo') {
