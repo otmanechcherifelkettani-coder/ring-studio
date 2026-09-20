@@ -31,16 +31,19 @@ const SHAPE_WIDTH_1CT = { round: 6.5, oval: 6.0, princess: 5.5, emerald: 5.5, pe
 const BAND_T = 1.6; // band thickness mm
 
 // permalink: restore state from #hash
-try {
-  const h = new URLSearchParams(location.hash.slice(1));
-  if (h.get('metal') && METALS[h.get('metal')]) state.metal = h.get('metal');
-  if (h.get('profile') && PROFILES[h.get('profile')]) state.profile = h.get('profile');
-  if (h.get('width')) state.width = Math.min(6, Math.max(1.5, parseFloat(h.get('width'))));
-  if (h.get('size') && SIZE_MM[h.get('size')]) state.size = h.get('size');
-  if (h.get('shape') && SHAPES[h.get('shape')]) state.shape = h.get('shape');
-  if (h.get('carat')) state.carat = Math.min(3, Math.max(0.3, parseFloat(h.get('carat'))));
-  if (h.get('setting') && SETTINGS[h.get('setting')]) state.setting = h.get('setting');
-} catch (e) {}
+function loadFromHash() {
+  try {
+    const h = new URLSearchParams(location.hash.slice(1));
+    if (h.get('metal') && METALS[h.get('metal')]) state.metal = h.get('metal');
+    if (h.get('profile') && PROFILES[h.get('profile')]) state.profile = h.get('profile');
+    if (h.get('width')) state.width = Math.min(6, Math.max(1.5, parseFloat(h.get('width'))));
+    if (h.get('size') && SIZE_MM[h.get('size')]) state.size = h.get('size');
+    if (h.get('shape') && SHAPES[h.get('shape')]) state.shape = h.get('shape');
+    if (h.get('carat')) state.carat = Math.min(3, Math.max(0.3, parseFloat(h.get('carat'))));
+    if (h.get('setting') && SETTINGS[h.get('setting')]) state.setting = h.get('setting');
+  } catch (e) {}
+}
+loadFromHash();
 
 /* ---------------- renderer / scene ---------------- */
 const container = document.getElementById('viewer');
@@ -340,7 +343,9 @@ function rebuild() {
   key.target.updateMatrixWorld();
 
   const h = new URLSearchParams({ metal: state.metal, profile: state.profile, width: state.width, size: state.size, shape: state.shape, carat: state.carat, setting: state.setting });
+  writingHash = true;
   history.replaceState(null, '', '#' + h.toString());
+  setTimeout(() => writingHash = false, 0);
 
   updateSummary();
   updateVendors();
@@ -478,6 +483,21 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
+
+function syncControls() {
+  document.querySelectorAll('#metal .swatch').forEach((b, i) => b.classList.toggle('active', Object.keys(METALS)[i] === state.metal));
+  const setSeg = (id, keys, cur) => document.querySelectorAll('#' + id + ' button').forEach((b, i) => b.classList.toggle('active', keys[i] === cur));
+  setSeg('profile', Object.keys(PROFILES), state.profile);
+  setSeg('shape', Object.keys(SHAPES), state.shape);
+  setSeg('setting', Object.keys(SETTINGS), state.setting);
+  setSeg('ringsize', SIZES, state.size);
+  const w = document.getElementById('width'); w.value = state.width;
+  const c = document.getElementById('carat'); c.value = state.carat;
+  document.getElementById('widthVal').textContent = state.width.toFixed(1);
+  document.getElementById('caratVal').textContent = state.carat.toFixed(1);
+}
+let writingHash = false;
+window.addEventListener('hashchange', () => { if (writingHash) return; loadFromHash(); syncControls(); rebuild(); });
 
 buildControls();
 rebuild();
