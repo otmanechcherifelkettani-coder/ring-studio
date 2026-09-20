@@ -70,6 +70,27 @@ function studioEnv() {
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(studioEnv(), 0.04).texture;
 
+// dedicated stone environment: mid-gray field + many bright strips -> scintillation
+function diamondEnv() {
+  const s = new THREE.Scene();
+  s.background = new THREE.Color(0x3a3a3f);
+  const geo = new THREE.PlaneGeometry(1, 1);
+  function panel(w, h, x, y, z, i) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(i, i, i), side: THREE.DoubleSide }));
+    m.scale.set(w, h, 1); m.position.set(x, y, z); m.lookAt(0, 0, 0); s.add(m);
+  }
+  panel(40, 10, -24, 12, -8, 9.0);
+  panel(40, 10,  24, 9, 10, 8.0);
+  panel(26, 26,  0, 30, 0, 7.0);
+  panel(20, 6,   0, -4, 26, 6.0);
+  panel(20, 6,  -8, 20, 22, 5.0);
+  panel(20, 6,  10, -18, -20, 4.0);
+  panel(16, 16, -26, -10, 12, 4.5);
+  panel(16, 16,  26, 22, -14, 4.5);
+  return s;
+}
+const DIAMOND_ENV = pmrem.fromScene(diamondEnv(), 0.02).texture;
+
 const camera = new THREE.PerspectiveCamera(30, 1, 1, 500);
 camera.position.set(33, 23, 53);
 
@@ -118,8 +139,8 @@ function stoneMaterial() {
 function stoneCoreMaterial() {
   // fake total internal reflection: bright faceted metallic core
   return new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 1.0, roughness: 0.02,
-    envMapIntensity: 4.5, flatShading: true,
+    color: 0xf4f7fc, metalness: 1.0, roughness: 0.03,
+    envMap: DIAMOND_ENV, envMapIntensity: 2.6, flatShading: true,
   });
 }
 
