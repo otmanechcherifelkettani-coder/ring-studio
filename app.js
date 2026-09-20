@@ -30,6 +30,18 @@ const SHAPE_WIDTH_1CT = { round: 6.5, oval: 6.0, princess: 5.5, emerald: 5.5, pe
 
 const BAND_T = 1.6; // band thickness mm
 
+// permalink: restore state from #hash
+try {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('metal') && METALS[h.get('metal')]) state.metal = h.get('metal');
+  if (h.get('profile') && PROFILES[h.get('profile')]) state.profile = h.get('profile');
+  if (h.get('width')) state.width = Math.min(6, Math.max(1.5, parseFloat(h.get('width'))));
+  if (h.get('size') && SIZE_MM[h.get('size')]) state.size = h.get('size');
+  if (h.get('shape') && SHAPES[h.get('shape')]) state.shape = h.get('shape');
+  if (h.get('carat')) state.carat = Math.min(3, Math.max(0.3, parseFloat(h.get('carat'))));
+  if (h.get('setting') && SETTINGS[h.get('setting')]) state.setting = h.get('setting');
+} catch (e) {}
+
 /* ---------------- renderer / scene ---------------- */
 const container = document.getElementById('viewer');
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -321,6 +333,9 @@ function rebuild() {
   key.target.position.set(0, Ri + BAND_T, 0);
   key.target.updateMatrixWorld();
 
+  const h = new URLSearchParams({ metal: state.metal, profile: state.profile, width: state.width, size: state.size, shape: state.shape, carat: state.carat, setting: state.setting });
+  history.replaceState(null, '', '#' + h.toString());
+
   updateSummary();
   updateVendors();
 }
@@ -368,6 +383,8 @@ function buildControls() {
   width.oninput = () => { state.width = parseFloat(width.value); document.getElementById('widthVal').textContent = state.width.toFixed(1); rebuild(); };
   const carat = document.getElementById('carat');
   carat.oninput = () => { state.carat = parseFloat(carat.value); document.getElementById('caratVal').textContent = state.carat.toFixed(1); rebuild(); };
+  width.value = state.width;
+  carat.value = state.carat;
   document.getElementById('widthVal').textContent = state.width.toFixed(1);
   document.getElementById('caratVal').textContent = state.carat.toFixed(1);
 }
