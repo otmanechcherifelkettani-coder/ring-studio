@@ -63,13 +63,15 @@ function studioEnv() {
   panel(26, 26,  0, 26, 2, 4.6);  // overhead softbox
   panel(18, 8,   0, 2, 22, 2.4);  // front fill card
   panel(14, 14,  -12, -16, 10, 1.8);
+  panel(90, 45,  12, 14, 44, 1.7); // big bright wall behind camera
+  panel(90, 90,  0, -24, 0, 1.5);  // pale studio floor bounce
   return s;
 }
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(studioEnv(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(30, 1, 1, 500);
-camera.position.set(30, 21, 46);
+camera.position.set(33, 23, 53);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -104,9 +106,9 @@ function metalMaterial() {
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff, metalness: 0, roughness: 0.0,
-    transmission: 0.9, thickness: 1.8, ior: 2.417,
+    transmission: 0.78, thickness: 2.4, ior: 2.417,
     clearcoat: 1.0, clearcoatRoughness: 0.0,
-    specularIntensity: 1.0, envMapIntensity: 3.2,
+    specularIntensity: 1.1, envMapIntensity: 4.2,
     attenuationColor: 0xf6f8ff, attenuationDistance: 6.0,
     flatShading: true,
   });
@@ -397,7 +399,7 @@ function rebuild() {
   ringGroup = wrap;
   scene.add(ringGroup);
 
-  controls.target.set(0, Ri * 0.92, 1.5);
+  controls.target.set(0, Ri * 1.0, 1.5);
   key.target.position.set(0, Ri * 0.9, 0);
   key.target.updateMatrixWorld();
   if (bokehPass) bokehPass.uniforms['focus'].value = camera.position.distanceTo(controls.target);
