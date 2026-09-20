@@ -106,10 +106,10 @@ function metalMaterial() {
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff, metalness: 0, roughness: 0.0,
-    transmission: 0.85, thickness: 4.0, ior: 2.417,
+    transmission: 0.8, thickness: 2.5, ior: 2.417,
     clearcoat: 1.0, clearcoatRoughness: 0.0,
     specularIntensity: 1.1, envMapIntensity: 5.0,
-    attenuationColor: 0xe9efff, attenuationDistance: 3.5,
+    attenuationColor: 0xe9efff, attenuationDistance: 8.0,
     flatShading: true,
   });
   if ('dispersion' in mat) mat.dispersion = 2.5;
@@ -290,8 +290,10 @@ function buildSetting(stone, Ri) {
   const gemMat = stoneMaterial();
 
   let gy;
+  g.userData.gyLocal = 0;
   if (state.setting === 'prong' || state.setting === 'pave') {
     gy = bandTopY + 1.2 + hp;
+    g.userData.gyLocal = gy;
     stoneMesh.position.y = gy;
     g.add(stoneMesh);
     const nProngs = (state.shape === 'round' && state.carat >= 1.5) ? 6 : 4;
@@ -309,13 +311,9 @@ function buildSetting(stone, Ri) {
       prong.castShadow = true;
       g.add(prong);
     }
-    const seat = new THREE.Mesh(new THREE.TorusGeometry(pr * 0.42, 0.22, 12, 48), metal);
-    seat.rotation.x = Math.PI / 2;
-    seat.position.y = gy - hp * 0.62;
-    seat.castShadow = true;
-    g.add(seat);
   } else if (state.setting === 'halo') {
     gy = bandTopY + 0.6 + hp * 0.8;
+    g.userData.gyLocal = gy;
     stoneMesh.position.y = gy;
     g.add(stoneMesh);
     const ext = maxExtent(outline);
@@ -337,6 +335,7 @@ function buildSetting(stone, Ri) {
     g.add(plate);
   } else { // bezel
     gy = bandTopY + 0.3 + hp * 0.75;
+    g.userData.gyLocal = gy;
     stoneMesh.position.y = gy;
     g.add(stoneMesh);
     const N = outline.length, pos = [];
@@ -386,14 +385,15 @@ function rebuild() {
     ringGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
   }
   const Ri = SIZE_MM[state.size] / 2;
-  ringGroup = new THREE.Group();
-  ringGroup.add(buildBand());
+  const inner = new THREE.Group();
+  inner.add(buildBand());
   const stone = buildStone();
-  ringGroup.add(buildSetting(stone, Ri));
-  ringGroup.rotation.x = Math.PI / 2;
+  const settingGroup = buildSetting(stone, Ri);
+  inner.add(settingGroup);
+  inner.rotation.x = Math.PI / 2;
   const wrap = new THREE.Group();
-  wrap.add(ringGroup);
-  wrap.rotation.x = -0.46;
+  wrap.add(inner);
+  wrap.rotation.x = -0.52;
   wrap.rotation.y = 0.06;
   wrap.position.y = Ri + BAND_T + 0.25;
   ringGroup = wrap;
@@ -402,7 +402,11 @@ function rebuild() {
   controls.target.set(0, Ri * 1.0, 1.5);
   key.target.position.set(0, Ri * 0.9, 0);
   key.target.updateMatrixWorld();
-  if (bokehPass) bokehPass.uniforms['focus'].value = camera.position.distanceTo(controls.target);
+  if (bokehPass) {
+    ringGroup.updateMatrixWorld(true);
+    const head = new THREE.Vector3(0, settingGroup.userData.gyLocal || Ri + BAND_T + 2, 0).applyMatrix4(inner.matrixWorld);
+    bokehPass.uniforms['focus'].value = camera.position.distanceTo(head);
+  }
 
   const h = new URLSearchParams({ metal: state.metal, profile: state.profile, width: state.width, size: state.size, shape: state.shape, carat: state.carat, setting: state.setting });
   writingHash = true;
@@ -522,7 +526,7 @@ const wantsDOF = !matchMedia('(max-width: 768px)').matches;
 if (wantsDOF) {
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bokehPass = new BokehPass(scene, camera, { focus: 42, aperture: 0.00032, maxblur: 0.0075 });
+  bokehPass = new BokehPass(scene, camera, { focus: 52, aperture: 0.00022, maxblur: 0.006 });
   composer.addPass(bokehPass);
   composer.addPass(new OutputPass());
 }
