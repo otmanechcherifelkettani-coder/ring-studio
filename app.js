@@ -59,7 +59,7 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(32, 1, 1, 500);
-camera.position.set(33, 25, 47);
+camera.position.set(28, 22, 46);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -323,16 +323,18 @@ function rebuild() {
   const stone = buildStone();
   ringGroup.add(buildSetting(stone, Ri));
 
-  // stand the ring on the shadow plane, slight tilt for depth
-  ringGroup.position.y = Ri + BAND_T;
+  // band circle vertical facing camera, stone on top, resting on shadow plane
+  ringGroup.rotation.x = Math.PI / 2; // torus axis toward camera, stone to +Z
   const wrap = new THREE.Group();
   wrap.add(ringGroup);
-  wrap.rotation.x = -0.22;
+  wrap.rotation.x = -0.34; // tilt back: stone rises to the top of the frame
+  wrap.rotation.y = 0.22;
+  wrap.position.y = Ri + BAND_T + 0.25;
   ringGroup = wrap;
   scene.add(ringGroup);
 
-  controls.target.set(0, Ri + BAND_T, 0);
-  key.target.position.set(0, Ri + BAND_T, 0);
+  controls.target.set(0, Ri * 0.9, 1.5);
+  key.target.position.set(0, Ri * 0.9, 0);
   key.target.updateMatrixWorld();
 
   const h = new URLSearchParams({ metal: state.metal, profile: state.profile, width: state.width, size: state.size, shape: state.shape, carat: state.carat, setting: state.setting });
