@@ -6,7 +6,10 @@
 <title>Ring Studio — design your ring in 3D</title>
 <meta name="description" content="Design a wedding or engagement ring in live 3D: metal, band profile, stone shape and size, setting. Then compare where to buy it.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=11">
 <script type="importmap">
 {
   "imports": {
@@ -19,12 +22,13 @@
 <body>
 <header class="topbar">
   <div class="brand">Ring<span>Studio</span></div>
-  <div class="tagline">Design it. See it in 3D. Buy it right.</div>
+  <div class="tagline">Design your ring. Compare where to buy it.</div>
 </header>
 
 <main class="layout">
   <section class="stage">
     <div id="viewer" aria-label="Live 3D ring preview"></div>
+    <div class="vignette"></div>
     <div class="summary" id="summary"></div>
     <div class="hint">Drag to rotate · scroll to zoom</div>
   </section>
@@ -61,7 +65,7 @@
 <section class="buy">
   <div class="buy-head">
     <h2>Where to buy this ring</h2>
-    <p class="note">Links jump straight into each jeweler's diamond search with your shape and size pre-applied. Prices are indicative 2026 guide ranges, not live quotes - always confirm on the vendor site.</p>
+    <p class="note">Each link opens the jeweler's diamond search with your shape and size pre-applied. Prices are indicative 2026 guide ranges, not live quotes — always confirm on the vendor site.</p>
   </div>
   <div class="tablewrap">
     <table id="vendorTable">
@@ -71,13 +75,13 @@
       <tbody></tbody>
     </table>
   </div>
-  <p class="footnote" id="priceSource"></p>
+  <p class="footnote">*Indicative lab-grown round-stone ranges, mainstream quality band: thediamondprice.com 2026 guides (Sep 2026: 0.5ct $330–700, 1.5ct $810–950; Jul 2026: 2ct $1,500–2,650), engagementringreviews.com 2026 (1ct $500–1,200), CaratRadar Aug 2026 (3ct avg $2,192). Fancy shapes, natural diamonds and settings differ; the vendor deeplink shows live listings. Filter deeplinks use each vendor's public URL parameters; affiliate parameters can be added once enrolled.</p>
 </section>
 
 <footer class="foot">
-  <span>v1 prototype · rendered live with Three.js · no images, everything is code</span>
+  <span>v2 prototype · rendered live with Three.js · true facet geometry, no images</span>
 </footer>
 
-<script type="module" src="app.js?v=8"></script>
+<script type="module" src="app.js?v=11"></script>
 </body>
 </html>

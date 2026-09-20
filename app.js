@@ -1,36 +1,27 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 
 /* ---------------- state ---------------- */
-const state = {
-  metal: 'yellow',      // yellow | white | rose | platinum
-  profile: 'court',     // flat | court | bevel
-  width: 2.8,           // mm
-  size: '6.5',          // US ring size
-  shape: 'round',       // round | oval | princess | emerald | pear
-  carat: 1.0,
-  setting: 'prong',     // prong | halo | bezel | pave
-};
+const state = { metal: 'yellow', profile: 'court', width: 2.8, size: '6.5', shape: 'round', carat: 1.0, setting: 'prong' };
 
 const METALS = {
-  yellow:   { label: 'Yellow gold', color: 0xe6c26a, roughness: 0.14, css: '#e6c26a' },
-  white:    { label: 'White gold',  color: 0xeceae2, roughness: 0.12, css: '#eceae2' },
-  rose:     { label: 'Rose gold',   color: 0xe2a98b, roughness: 0.14, css: '#e2a98b' },
-  platinum: { label: 'Platinum',    color: 0xdfe0dd, roughness: 0.18, css: '#dfe0dd' },
+  yellow:   { label: 'Yellow gold', color: 0xe3b968, roughness: 0.13, css: '#e3b968' },
+  white:    { label: 'White gold',  color: 0xeeece4, roughness: 0.11, css: '#eeece4' },
+  rose:     { label: 'Rose gold',   color: 0xe0a284, roughness: 0.13, css: '#e0a284' },
+  platinum: { label: 'Platinum',    color: 0xe2e3e0, roughness: 0.17, css: '#e2e3e0' },
 };
 const PROFILES = { flat: 'Flat', court: 'Court', bevel: 'Bevelled' };
-const SETTINGS = { prong: 'Solitaire prong', halo: 'Halo', bezel: 'Bezel', pave: 'Pavé band' };
+const SETTINGS = { prong: 'Solitaire', halo: 'Halo', bezel: 'Bezel', pave: 'Pavé band' };
 const SHAPES = { round: 'Round', oval: 'Oval', princess: 'Princess', emerald: 'Emerald', pear: 'Pear' };
 const SIZES = ['4','4.5','5','5.5','6','6.5','7','7.5','8','8.5','9'];
 const SIZE_MM = { '4':14.9,'4.5':15.3,'5':15.7,'5.5':16.1,'6':16.5,'6.5':16.9,'7':17.3,'7.5':17.7,'8':18.1,'8.5':18.5,'9':19.0 };
+const SHAPE_WIDTH_1CT = { round: 6.5, oval: 5.5, princess: 5.5, emerald: 5.5, pear: 5.5 };
+const BAND_T = 1.6;
 
-// girdle width (mm) of a 1ct stone, scaled by cbrt(carat)
-const SHAPE_WIDTH_1CT = { round: 6.5, oval: 6.0, princess: 5.5, emerald: 5.5, pear: 5.7 };
-
-const BAND_T = 1.6; // band thickness mm
-
-// permalink: restore state from #hash
 function loadFromHash() {
   try {
     const h = new URLSearchParams(location.hash.slice(1));
@@ -47,46 +38,60 @@ loadFromHash();
 
 /* ---------------- renderer / scene ---------------- */
 const container = document.getElementById('viewer');
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf4f2ee);
+scene.background = new THREE.Color(0xf6f4ef);
 
+// jewelry-studio environment: dark room, bright strip softboxes -> crisp facet fire
+function studioEnv() {
+  const s = new THREE.Scene();
+  s.background = new THREE.Color(0x040404);
+  const geo = new THREE.PlaneGeometry(1, 1);
+  function panel(w, h, x, y, z, i) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(i, i, i), side: THREE.DoubleSide }));
+    m.scale.set(w, h, 1); m.position.set(x, y, z); m.lookAt(0, 0,0); s.add(m);
+  }
+  panel(30, 7, -20, 9, -6, 7.0);  // left strip softbox
+  panel(30, 7,  20, 7,  8, 6.0);  // right strip softbox
+  panel(22, 22,  0, 26, 2, 3.2);  // overhead softbox
+  panel(12, 4,   0, 1, 22, 1.1);  // front fill card
+  panel(8, 8,  -12, -16, 10, 0.9);
+  return s;
+}
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environment = pmrem.fromScene(studioEnv(), 0.04).texture;
 
-const camera = new THREE.PerspectiveCamera(32, 1, 1, 500);
-camera.position.set(28, 22, 46);
+const camera = new THREE.PerspectiveCamera(30, 1, 1, 500);
+camera.position.set(22, 17, 36);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.06;
+controls.dampingFactor = 0.05;
 controls.autoRotate = true;
-controls.autoRotateSpeed = 1.1;
-controls.minDistance = 24;
-controls.maxDistance = 120;
+controls.autoRotateSpeed = 0.55;
+controls.minDistance = 20;
+controls.maxDistance = 110;
+controls.enablePan = false;
 
-const key = new THREE.DirectionalLight(0xffffff, 1.6);
+const key = new THREE.DirectionalLight(0xffffff, 1.25);
 key.position.set(8, 30, 14);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
-key.shadow.radius = 14;
+key.shadow.radius = 10;
 key.shadow.bias = -0.0004;
 Object.assign(key.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 5, far: 80 });
 key.shadow.camera.updateProjectionMatrix();
 scene.add(key);
-scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+scene.add(new THREE.AmbientLight(0xffffff, 0.18));
 
-const shadowPlane = new THREE.Mesh(
-  new THREE.PlaneGeometry(300, 300),
-  new THREE.ShadowMaterial({ opacity: 0.13 })
-);
+const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.ShadowMaterial({ opacity: 0.15 }));
 shadowPlane.rotation.x = -Math.PI / 2;
 shadowPlane.receiveShadow = true;
 scene.add(shadowPlane);
@@ -94,217 +99,271 @@ scene.add(shadowPlane);
 /* ---------------- materials ---------------- */
 function metalMaterial() {
   const m = METALS[state.metal];
-  return new THREE.MeshPhysicalMaterial({
-    color: m.color, metalness: 1.0, roughness: m.roughness, envMapIntensity: 1.15,
-  });
+  return new THREE.MeshPhysicalMaterial({ color: m.color, metalness: 1.0, roughness: m.roughness, envMapIntensity: 1.35 });
 }
 function stoneMaterial() {
   const mat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 0.0, roughness: 0.02,
-    transmission: 0.9, thickness: 2.5, ior: 2.417,
-    clearcoat: 1.0, clearcoatRoughness: 0.02,
-    specularIntensity: 1.4, envMapIntensity: 2.8,
-    attenuationColor: 0xdfe9ff, attenuationDistance: 9.0,
+    color: 0xffffff, metalness: 0, roughness: 0.0,
+    transmission: 0.95, thickness: 3.0, ior: 2.417,
+    clearcoat: 1.0, clearcoatRoughness: 0.0,
+    specularIntensity: 1.0, envMapIntensity: 2.0,
+    attenuationColor: 0xf6f8ff, attenuationDistance: 6.0,
     flatShading: true,
   });
-  if ('dispersion' in mat) mat.dispersion = 7.0; // subtle rainbow fire where supported
+  if ('dispersion' in mat) mat.dispersion = 8.0;
   return mat;
 }
 
-/* ---------------- band geometry ---------------- */
-function bandOutline(profile, Ri, w, t) {
-  // returns array of [y, z]: y = along band axis (-w/2..w/2), z = radial offset outward (0..t)
+/* ---------------- band ---------------- */
+function bandOutline(profile, w, t) {
   const pts = [];
-  const edge = Math.min(0.14, w * 0.06); // soft edge rounding on inside face
-  // inside face (bottom edge -> top edge)
-  pts.push([-w / 2, 0]);
-  pts.push([-w / 2 + edge, 0]);
-  pts.push([w / 2 - edge, 0]);
-  pts.push([w / 2, 0]);
+  const edge = Math.min(0.14, w * 0.06);
+  pts.push([-w / 2, 0], [-w / 2 + edge, 0], [w / 2 - edge, 0], [w / 2, 0]);
   if (profile === 'flat') {
     const cr = Math.min(0.16, t * 0.22);
     for (let i = 1; i <= 3; i++) { const a = (i / 4) * Math.PI / 2; pts.push([w / 2 - cr + Math.sin(a) * cr, t - cr + (1 - Math.cos(a)) * cr]); }
-    pts.push([w / 2, t]);
-    pts.push([-w / 2, t]);
+    pts.push([w / 2, t], [-w / 2, t]);
     for (let i = 1; i <= 3; i++) { const a = (i / 4) * Math.PI / 2; pts.push([-w / 2 + cr - Math.sin(a) * cr, t - cr + (1 - Math.cos(a)) * cr]); }
-    pts.push([-w / 2, 0]); // close the cross-section
+    pts.push([-w / 2, 0]);
   } else if (profile === 'court') {
     const n = 24;
-    for (let i = 1; i <= n; i++) {
-      const y = w / 2 - (i / n) * w;
-      const u = (2 * y) / w;
-      const z = t * Math.sqrt(Math.max(0, 1 - u * u));
-      pts.push([y, z]);
-    }
-  } else { // bevel: octagonal chamfers
+    for (let i = 1; i <= n; i++) { const y = w / 2 - (i / n) * w; const u = (2 * y) / w; pts.push([y, t * Math.sqrt(Math.max(0, 1 - u * u))]); }
+  } else {
     const c = Math.min(w * 0.22, t * 0.45);
-    pts.push([w / 2, t - c]);
-    pts.push([w / 2 - c, t]);
-    pts.push([-w / 2 + c, t]);
-    pts.push([-w / 2, t - c]);
-    pts.push([-w / 2, 0]); // close the cross-section
+    pts.push([w / 2, t - c], [w / 2 - c, t], [-w / 2 + c, t], [-w / 2, t - c], [-w / 2, 0]);
   }
   return pts;
 }
-
 function buildBand() {
   const Ri = SIZE_MM[state.size] / 2;
-  const outline = bandOutline(state.profile, Ri, state.width, BAND_T);
-  const pts = outline.map(([y, z]) => new THREE.Vector2(Ri + z, y));
-  const geo = new THREE.LatheGeometry(pts, 160);
+  const pts = bandOutline(state.profile, state.width, BAND_T).map(([y, z]) => new THREE.Vector2(Ri + z, y));
+  const geo = new THREE.LatheGeometry(pts, 180);
   geo.computeVertexNormals();
   const mesh = new THREE.Mesh(geo, metalMaterial());
   mesh.castShadow = true;
   return mesh;
 }
 
-/* ---------------- stone geometry ---------------- */
-function outlinePoints(shape) {
+/* ---------------- gem geometry ---------------- */
+function outlineWarp(shape, x, y) { // normalized coords, returns warped normalized
+  if (shape === 'oval') return [x * 1.45, y];
+  if (shape === 'pear') {
+    if (y < 0) { const k = -y; return [x * (1 - 0.62 * k * k), y * (1 + 0.8 * k)]; }
+    return [x * (1 + 0.06 * y), y];
+  }
+  return [x, y];
+}
+function unitOutline(shape, per) { // array of [x,y], |.|~1
   const pts = [];
-  if (shape === 'round' || shape === 'oval') {
-    const N = 48, a = shape === 'oval' ? 1.35 : 1;
-    for (let i = 0; i < N; i++) { const t = (i / N) * Math.PI * 2; pts.push([Math.cos(t) * a, Math.sin(t)]); }
-  } else if (shape === 'princess') {
-    const per = 8;
-    for (let s = 0; s < 4; s++) {
-      for (let i = 0; i < per; i++) {
-        const u = i / per; // walk each side of the unit square (rotated 45 deg look is fine)
-        const corners = [[1,1],[-1,1],[-1,-1],[1,-1]];
-        const [x0,y0] = corners[s], [x1,y1] = corners[(s+1)%4];
-        pts.push([x0 + (x1-x0)*u, y0 + (y1-y0)*u]);
-      }
+  if (shape === 'princess') {
+    const corners = [[1,1],[-1,1],[-1,-1],[1,-1]];
+    for (let s = 0; s < 4; s++) for (let i = 0; i < per; i++) {
+      const u = i / per, [x0,y0] = corners[s], [x1,y1] = corners[(s+1)%4];
+      pts.push([x0 + (x1-x0)*u, y0 + (y1-y0)*u]);
     }
   } else if (shape === 'emerald') {
     const W = 1.35, H = 1, c = 0.34;
     const corners = [[W-c,H],[W,H-c],[W,-H+c],[W-c,-H],[-W+c,-H],[-W,-H+c],[-W,H-c],[-W+c,H]];
-    const per = 4;
-    for (let s = 0; s < corners.length; s++) {
-      for (let i = 0; i < per; i++) {
-        const u = i / per;
-        const [x0,y0] = corners[s], [x1,y1] = corners[(s+1)%corners.length];
-        pts.push([x0 + (x1-x0)*u, y0 + (y1-y0)*u]);
-      }
-    }
-  } else { // pear
-    const N = 48;
-    for (let i = 0; i < N; i++) {
-      const t = (i / N) * Math.PI * 2;
-      let x = Math.sin(t), y = Math.cos(t);
-      if (y < 0) { const k = -y; x *= (1 - 0.62 * k); y = -Math.pow(k, 0.9) * 1.35; }
-      else { y = y * 1.0; }
-      pts.push([x, y]);
+    for (let s = 0; s < corners.length; s++) for (let i = 0; i < per; i++) {
+      const u = i / per, [x0,y0] = corners[s], [x1,y1] = corners[(s+1)%corners.length];
+      pts.push([x0 + (x1-x0)*u, y0 + (y1-y0)*u]);
     }
   }
   return pts;
 }
-
-function buildStone() {
-  const w1 = SHAPE_WIDTH_1CT[state.shape];
-  const d = w1 * Math.cbrt(state.carat); // girdle width mm
-  const r = d / 2;
-  const outline = outlinePoints(state.shape);
-  const N = outline.length;
-  // rings: [radiusScale, height] from culet (bottom) to table (top)
-  const rings = [
-    [0.001, -0.50 * d],
-    [0.62,  -0.26 * d],
-    [1.0,   -0.015 * d],
-    [1.0,    0.015 * d],
-    [0.80,   0.10 * d],
-    [0.56,   0.17 * d],
-  ];
-  const pos = [];
-  const ringPt = (ring, i) => {
-    const [s, h] = rings[ring];
-    const [x, y] = outline[i % N];
-    return [x * s * r, h, y * s * r];
-  };
-  for (let ri = 0; ri < rings.length - 1; ri++) {
-    for (let i = 0; i < N; i++) {
-      const a = ringPt(ri, i), b = ringPt(ri, i + 1), c = ringPt(ri + 1, i + 1), e = ringPt(ri + 1, i);
-      pos.push(...a, ...b, ...c, ...a, ...c, ...e);
-    }
-  }
-  // table cap (fan from center)
-  const topZ = rings[rings.length - 1][1];
+function girdleOutline(shape, R) { // mm coords
+  const pts = [];
+  if (shape === 'princess') return unitOutline('princess', 10).map(([x,y]) => [x * R, y * R]);
+  if (shape === 'emerald') return unitOutline('emerald', 4).map(([x,y]) => [x * R / 1.35, y * R / 1.35]);
+  const N = 64;
   for (let i = 0; i < N; i++) {
-    const c = ringPt(rings.length - 1, i + 1), e = ringPt(rings.length - 1, i);
-    pos.push(0, topZ, 0, ...c, ...e);
+    const a = (i / N) * Math.PI * 2;
+    const [wx, wy] = outlineWarp(shape, Math.cos(a), Math.sin(a));
+    pts.push([wx * R, wy * R]);
+  }
+  return pts;
+}
+
+function buildBrilliantGeo(shape, R, hc, hp) {
+  // true round-brilliant topology: table, 8 stars, 8 bezels, 16 upper girdle,
+  // 16 lower girdle, 8 pavilion mains, culet. Oval/pear via outline warp.
+  const rt = 0.55 * R, rm = 0.80 * R, zm = 0.5 * hc, rl = 0.42 * R, zl = -0.55 * hp;
+  const pos = [];
+  const W = (r, a, z) => { const [x, y] = outlineWarp(shape, Math.cos(a) * r / R, Math.sin(a) * r / R); return [x * R, z, y * R]; };
+  const T = k => W(rt, k * Math.PI / 4, hc);
+  const M = k => W(rm, k * Math.PI / 4 + Math.PI / 8, zm);
+  const G = j => W(R, j * Math.PI / 8, 0);
+  const L = k => W(rl, k * Math.PI / 4 + Math.PI / 8, zl);
+  const C = [0, -hp, 0];
+  const tri = (a, b, c) => pos.push(...a, ...b, ...c);
+  for (let k = 0; k < 8; k++) {
+    const k1 = (k + 1) % 8, km = (k + 7) % 8;
+    tri([0, hc, 0], T(k1), T(k));                    // table
+    tri(T(k), T(k1), M(k));                          // star
+    tri(T(k), M(k), G(2 * k));                       // bezel 1/2
+    tri(T(k), G(2 * k), M(km));                      // bezel 2/2
+    tri(M(k), G(2 * k), G(2 * k + 1));               // upper girdle
+    tri(M(k), G(2 * k + 1), G((2 * k + 2) % 16));    // upper girdle
+    tri(G(2 * k), L(km), G(2 * k + 1));              // lower girdle
+    tri(G(2 * k + 1), L(km), L(k));                  // wait - keep simple pairs below
+  }
+  // rebuild pavilion cleanly (lower girdle + mains) to avoid seam mistakes
+  pos.length = 0;
+  for (let k = 0; k < 8; k++) {
+    const k1 = (k + 1) % 8, km = (k + 7) % 8;
+    tri([0, hc, 0], T(k1), T(k));                    // table
+    tri(T(k), T(k1), M(k));                          // star
+    tri(T(k), M(k), G(2 * k));                       // bezel
+    tri(T(k), G(2 * k), M(km));                      // bezel
+    tri(M(k), G(2 * k), G(2 * k + 1));               // upper girdle
+    tri(M(k), G(2 * k + 1), G((2 * k + 2) % 16));    // upper girdle
+  }
+  for (let j = 0; j < 16; j++) {
+    const j1 = (j + 1) % 16;
+    const lk = Math.floor(j / 2);                    // L index near this girdle segment
+    const lA = (j % 2 === 0) ? (lk + 7) % 8 : lk;    // alternate which L apex
+    tri(G(j), G(j1), L(lA));                         // lower girdle
+  }
+  for (let k = 0; k < 8; k++) {
+    tri(L(k), L((k + 1) % 8), C);                    // pavilion mains
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.computeVertexNormals();
-  const mesh = new THREE.Mesh(geo, stoneMaterial());
-  mesh.castShadow = true;
-  return { mesh, d, r };
+  return geo;
 }
 
-/* ---------------- setting geometry ---------------- */
+function buildRingStackGeo(outlineMM, rings) {
+  // outlineMM: [[x,y]...] in mm at scale 1.0; rings: [scale, z]
+  const N = outlineMM.length, pos = [];
+  const pt = (ri, i) => { const [s, z] = rings[ri]; const [x, y] = outlineMM[i % N]; return [x * s, z, y * s]; };
+  for (let ri = 0; ri < rings.length - 1; ri++) for (let i = 0; i < N; i++) {
+    const a = pt(ri, i), b = pt(ri, i + 1), c = pt(ri + 1, i + 1), e = pt(ri + 1, i);
+    pos.push(...a, ...b, ...c, ...a, ...c, ...e);
+  }
+  const topZ = rings[rings.length - 1][1], botZ = rings[0][1];
+  for (let i = 0; i < N; i++) {
+    pos.push(0, topZ, 0, ...pt(rings.length - 1, i + 1), ...pt(rings.length - 1, i));  // table cap
+    pos.push(0, botZ, 0, ...pt(0, i), ...pt(0, i + 1));                                 // culet cap
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function buildStone() {
+  const d = SHAPE_WIDTH_1CT[state.shape] * Math.cbrt(state.carat);
+  const R = d / 2;
+  let geo, hc, hp;
+  if (state.shape === 'round' || state.shape === 'oval' || state.shape === 'pear') {
+    hc = 0.15 * d; hp = 0.44 * d;
+    geo = buildBrilliantGeo(state.shape, R, hc, hp);
+  } else if (state.shape === 'princess') {
+    hc = 0.16 * d; hp = 0.50 * d;
+    const ol = unitOutline('princess', 2).map(([x,y]) => [x * R, y * R]);
+    geo = buildRingStackGeo(ol, [[0.03,-hp],[0.40,-0.68*hp],[0.72,-0.34*hp],[1.0,0],[0.78,0.5*hc],[0.52,hc]]);
+  } else { // emerald step cut
+    hc = 0.13 * d; hp = 0.42 * d;
+    const ol = unitOutline('emerald', 4).map(([x,y]) => [x * R / 1.35, y * R / 1.35]);
+    geo = buildRingStackGeo(ol, [[0.12,-hp],[0.35,-0.85*hp],[0.60,-0.58*hp],[0.82,-0.28*hp],[1.0,0],[0.80,0.5*hc],[0.58,hc]]);
+  }
+  const mesh = new THREE.Mesh(geo, stoneMaterial());
+  mesh.castShadow = true;
+  return { mesh, d, R, hc, hp, outline: girdleOutline(state.shape, R) };
+}
+
+function extentAt(shape, R, aDeg) {
+  const over = { round: 1.0, oval: 1.16, pear: 1.05, princess: 1.30, emerald: 1.02 };
+  return R * over[shape];
+}
+function maxExtent(outline) { return Math.max(...outline.map(([x,y]) => Math.hypot(x, y))); }
+
+/* ---------------- settings ---------------- */
 function buildSetting(stone, Ri) {
   const g = new THREE.Group();
   const metal = metalMaterial();
-  const { mesh: stoneMesh, d, r } = stone;
+  const { mesh: stoneMesh, d, R, hc, hp, outline } = stone;
   const bandTopY = Ri + BAND_T;
   const gemMat = stoneMaterial();
 
+  let gy;
   if (state.setting === 'prong' || state.setting === 'pave') {
-    const lift = 1.5;
-    stoneMesh.position.y = bandTopY + lift + 0.50 * d;
+    gy = bandTopY + 1.2 + hp;
+    stoneMesh.position.y = gy;
     g.add(stoneMesh);
     const nProngs = (state.shape === 'round' && state.carat >= 1.5) ? 6 : 4;
-    const prongR = Math.max(0.24, d * 0.04);
-    const gy = stoneMesh.position.y; // girdle height
+    const prongR = Math.max(0.22, d * 0.035);
+    const pr = extentAt(state.shape, R, 45);
     for (let i = 0; i < nProngs; i++) {
       const a = (i / nProngs) * Math.PI * 2 + Math.PI / nProngs;
       const ca = Math.cos(a), sa = Math.sin(a);
-      // hug the pavilion, wrap over the crown edge - never tunnels through the stone
       const curve = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(ca * r * 0.55, gy - 0.34 * d, sa * r * 0.55),
-        new THREE.Vector3(ca * r * 1.06, gy - 0.02 * d, sa * r * 1.06),
-        new THREE.Vector3(ca * r * 0.60, gy + 0.19 * d, sa * r * 0.60)
+        new THREE.Vector3(ca * pr * 0.45, gy - hp * 0.8, sa * pr * 0.45),
+        new THREE.Vector3(ca * pr * 1.07, gy - 0.01 * d, sa * pr * 1.07),
+        new THREE.Vector3(ca * pr * 0.60, gy + hc + 0.02 * d, sa * pr * 0.60)
       );
-      const prong = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, prongR, 8, false), metal);
+      const prong = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, prongR, 8, false), metal);
       prong.castShadow = true;
       g.add(prong);
     }
-    const seat = new THREE.Mesh(new THREE.TorusGeometry(r * 0.66, 0.3, 12, 48), metal);
+    const seat = new THREE.Mesh(new THREE.TorusGeometry(pr * 0.52, 0.28, 12, 48), metal);
     seat.rotation.x = Math.PI / 2;
-    seat.position.y = gy - 0.16 * d;
+    seat.position.y = gy - hp * 0.55;
     seat.castShadow = true;
     g.add(seat);
   } else if (state.setting === 'halo') {
-    stoneMesh.position.y = bandTopY + 0.5 + 0.50 * d;
+    gy = bandTopY + 0.6 + hp * 0.8;
+    stoneMesh.position.y = gy;
     g.add(stoneMesh);
-    const nH = 14, hr = r * 1.3, sr = Math.max(0.5, r * 0.16);
+    const ext = maxExtent(outline);
+    const nH = 16, sr = Math.max(0.45, ext * 0.13);
     for (let i = 0; i < nH; i++) {
       const a = (i / nH) * Math.PI * 2;
+      let hx, hy;
+      if (state.shape === 'princess') { const ol = unitOutline('princess', 40); const idx = Math.floor((i / nH) * ol.length); [hx, hy] = ol[idx].map(v => v * R * 1.22); }
+      else if (state.shape === 'emerald') { const ol = unitOutline('emerald', 40); const idx = Math.floor((i / nH) * ol.length); [hx, hy] = ol[idx].map(v => v * (R / 1.35) * 1.22); }
+      else { const [wx, wy] = outlineWarp(state.shape, Math.cos(a), Math.sin(a)); hx = wx * R * 1.22; hy = wy * R * 1.22; }
       const s = new THREE.Mesh(new THREE.OctahedronGeometry(sr, 1), gemMat);
-      s.position.set(Math.cos(a) * hr, stoneMesh.position.y - 0.34 * d, Math.sin(a) * hr);
-      s.scale.y = 0.75;
+      s.position.set(hx, gy - 0.06 * d, hy);
+      s.scale.y = 0.7;
       g.add(s);
     }
-    const plate = new THREE.Mesh(new THREE.CylinderGeometry(hr + sr * 0.7, r * 0.5, 0.9, 48), metal);
-    plate.position.y = stoneMesh.position.y - 0.34 * d - 0.45;
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(ext * 1.18 + sr * 0.6, ext * 0.6, 0.8, 48), metal);
+    plate.position.y = gy - 0.06 * d - 0.4;
     plate.castShadow = true;
     g.add(plate);
   } else { // bezel
-    stoneMesh.position.y = bandTopY + 0.2 + 0.44 * d;
+    gy = bandTopY + 0.3 + hp * 0.75;
+    stoneMesh.position.y = gy;
     g.add(stoneMesh);
-    const rimPts = [
-      new THREE.Vector2(r * 0.75, -0.30 * d),
-      new THREE.Vector2(r + 0.55, -0.06 * d),
-      new THREE.Vector2(r + 0.5, 0.06 * d),
-      new THREE.Vector2(r * 0.99, 0.075 * d),
+    const N = outline.length, pos = [];
+    const loops = [
+      outline.map(([x,y]) => [x * 1.09, y * 1.09, gy - 0.02 * d]),
+      outline.map(([x,y]) => [x * 1.09, y * 1.09, gy + 0.085 * d]),
+      outline.map(([x,y]) => [x * 0.965, y * 0.965, gy + 0.095 * d]),
     ];
-    const rim = new THREE.Mesh(new THREE.LatheGeometry(rimPts, 96), metal);
-    rim.position.y = stoneMesh.position.y;
+    for (let li = 0; li < 2; li++) for (let i = 0; i < N; i++) {
+      const [ax, ay, az] = loops[li][i], [bx, by, bz] = loops[li][(i + 1) % N];
+      const [cx, cy, cz] = loops[li + 1][(i + 1) % N], [ex, ey, ez] = loops[li + 1][i];
+      pos.push(ax, az, ay, bx, bz, by, cx, cz, cy, ax, az, ay, cx, cz, cy, ex, ez, ey);
+    }
+    const rimGeo = new THREE.BufferGeometry();
+    rimGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    rimGeo.computeVertexNormals();
+    const rim = new THREE.Mesh(rimGeo, metal);
     rim.castShadow = true;
     g.add(rim);
+    const ext = maxExtent(outline);
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(ext * 0.9, ext * 0.55, hp * 0.7 + 0.6, 48), metal);
+    cup.position.y = gy - hp * 0.45 - 0.2;
+    cup.castShadow = true;
+    g.add(cup);
   }
 
   if (state.setting === 'pave') {
-    const count = Math.max(9, Math.round((2 * Math.PI * (Ri + BAND_T * 0.55)) / 2.6));
-    const sr = state.width * 0.16;
+    const count = Math.max(11, Math.round((2 * Math.PI * (Ri + BAND_T * 0.55)) / 2.4));
+    const sr = state.width * 0.15;
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2;
       const bead = new THREE.Mesh(new THREE.OctahedronGeometry(sr, 1), gemMat);
@@ -324,26 +383,24 @@ function rebuild() {
     scene.remove(ringGroup);
     ringGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
   }
-  ringGroup = new THREE.Group();
   const Ri = SIZE_MM[state.size] / 2;
-  const band = buildBand();
-  ringGroup.add(band);
+  ringGroup = new THREE.Group();
+  ringGroup.add(buildBand());
   const stone = buildStone();
   ringGroup.add(buildSetting(stone, Ri));
-
-  // band circle vertical facing camera, stone on top, resting on shadow plane
-  ringGroup.rotation.x = Math.PI / 2; // torus axis toward camera, stone to +Z
+  ringGroup.rotation.x = Math.PI / 2;
   const wrap = new THREE.Group();
   wrap.add(ringGroup);
-  wrap.rotation.x = -0.46; // tilt back: stone rises to the top of the frame
+  wrap.rotation.x = -0.46;
   wrap.rotation.y = 0.06;
   wrap.position.y = Ri + BAND_T + 0.25;
   ringGroup = wrap;
   scene.add(ringGroup);
 
-  controls.target.set(0, Ri * 0.9, 1.5);
+  controls.target.set(0, Ri * 0.92, 1.5);
   key.target.position.set(0, Ri * 0.9, 0);
   key.target.updateMatrixWorld();
+  if (bokehPass) bokehPass.uniforms['focus'].value = camera.position.distanceTo(controls.target);
 
   const h = new URLSearchParams({ metal: state.metal, profile: state.profile, width: state.width, size: state.size, shape: state.shape, carat: state.carat, setting: state.setting });
   writingHash = true;
@@ -363,42 +420,32 @@ function buildControls() {
     const b = el('button', 'swatch' + (k === state.metal ? ' active' : ''));
     const dot = el('span', 'dot'); dot.style.background = m.css;
     b.appendChild(dot);
-    const lbl = el('small', null, m.label.replace(' gold', ''));
-    b.appendChild(lbl);
+    b.appendChild(el('small', null, m.label.replace(' gold', '')));
     b.onclick = () => { state.metal = k; refreshActive(metalWrap, b); rebuild(); };
     metalWrap.appendChild(b);
   });
-  const profileWrap = document.getElementById('profile');
-  Object.entries(PROFILES).forEach(([k, label]) => {
-    const b = el('button', k === state.profile ? 'active' : null, label);
-    b.onclick = () => { state.profile = k; refreshActive(profileWrap, b); rebuild(); };
-    profileWrap.appendChild(b);
-  });
+  const seg = (id, obj, key) => {
+    const wrap = document.getElementById(id);
+    Object.entries(obj).forEach(([k, label]) => {
+      const b = el('button', k === state[key] ? 'active' : null, label);
+      b.onclick = () => { state[key] = k; refreshActive(wrap, b); rebuild(); };
+      wrap.appendChild(b);
+    });
+  };
+  seg('profile', PROFILES, 'profile');
+  seg('shape', SHAPES, 'shape');
+  seg('setting', SETTINGS, 'setting');
   const sizeWrap = document.getElementById('ringsize');
   SIZES.forEach(s => {
     const b = el('button', s === state.size ? 'active' : null, s);
     b.onclick = () => { state.size = s; refreshActive(sizeWrap, b); rebuild(); };
     sizeWrap.appendChild(b);
   });
-  const shapeWrap = document.getElementById('shape');
-  Object.entries(SHAPES).forEach(([k, label]) => {
-    const b = el('button', k === state.shape ? 'active' : null, label);
-    b.onclick = () => { state.shape = k; refreshActive(shapeWrap, b); rebuild(); };
-    shapeWrap.appendChild(b);
-  });
-  const settingWrap = document.getElementById('setting');
-  Object.entries(SETTINGS).forEach(([k, label]) => {
-    const b = el('button', k === state.setting ? 'active' : null, label);
-    b.onclick = () => { state.setting = k; refreshActive(settingWrap, b); rebuild(); };
-    settingWrap.appendChild(b);
-  });
-
   const width = document.getElementById('width');
   width.oninput = () => { state.width = parseFloat(width.value); document.getElementById('widthVal').textContent = state.width.toFixed(1); rebuild(); };
   const carat = document.getElementById('carat');
   carat.oninput = () => { state.carat = parseFloat(carat.value); document.getElementById('caratVal').textContent = state.carat.toFixed(1); rebuild(); };
-  width.value = state.width;
-  carat.value = state.carat;
+  width.value = state.width; carat.value = state.carat;
   document.getElementById('widthVal').textContent = state.width.toFixed(1);
   document.getElementById('caratVal').textContent = state.carat.toFixed(1);
 }
@@ -417,7 +464,6 @@ const VENDOR_SHAPES = {
   emerald:  { ja: 'Emerald',  bn: 'emerald-cut',   be: 'Emerald' },
   pear:     { ja: 'Pear',     bn: 'pear-shaped',   be: 'Pear' },
 };
-// indicative lab-grown round-stone price ranges (USD), Sept 2026 sources (see footnote)
 const PRICE_BRACKETS = [
   { max: 0.6,  text: '$330 - $700' },
   { max: 1.1,  text: '$500 - $1,200' },
@@ -429,30 +475,22 @@ function priceRange() {
   const b = PRICE_BRACKETS.find(b => state.carat <= b.max) || PRICE_BRACKETS[PRICE_BRACKETS.length - 1];
   return b.text;
 }
-
 function vendorLinks() {
   const v = VENDOR_SHAPES[state.shape];
   const lo = Math.max(0.2, state.carat - 0.15).toFixed(2);
   const hi = (state.carat + 0.15).toFixed(2);
   return [
-    {
-      name: 'James Allen', host: 'jamesallen.com',
+    { name: 'James Allen', host: 'jamesallen.com',
       url: `https://www.jamesallen.com/loose-diamonds/all-diamonds/?Shape=${v.ja}&CaratFrom=${lo}&CaratTo=${hi}`,
-      type: 'plain', typeLabel: 'Filtered deeplink (plain)',
-    },
-    {
-      name: 'Blue Nile', host: 'bluenile.com',
+      type: 'plain', typeLabel: 'Filtered deeplink (plain)' },
+    { name: 'Blue Nile', host: 'bluenile.com',
       url: `https://www.bluenile.com/diamond-search?Shape=${v.bn}&CaratFrom=${lo}&CaratTo=${hi}`,
-      type: 'ready', typeLabel: 'Affiliate-ready (a_aid params) - currently plain',
-    },
-    {
-      name: 'Brilliant Earth', host: 'brilliantearth.com',
+      type: 'ready', typeLabel: 'Affiliate-ready (a_aid params) - currently plain' },
+    { name: 'Brilliant Earth', host: 'brilliantearth.com',
       url: `https://www.brilliantearth.com/loose-diamonds/search/?shapes=${v.be}&carat_min=${lo}&carat_max=${hi}`,
-      type: 'ready', typeLabel: 'Affiliate program exists - currently plain',
-    },
+      type: 'ready', typeLabel: 'Affiliate program exists - currently plain' },
   ];
 }
-
 function updateVendors() {
   const tbody = document.querySelector('#vendorTable tbody');
   tbody.innerHTML = '';
@@ -463,25 +501,35 @@ function updateVendors() {
     tdName.appendChild(el('div', 'vurl', v.host));
     tr.appendChild(tdName);
     tr.appendChild(el('td', null, `${SHAPES[state.shape]} ${state.carat.toFixed(1)} ct`));
-    tr.appendChild(el('td', null, priceRange()));
+    tr.appendChild(el('td', 'price', priceRange()));
     const tdT = el('td');
     tdT.appendChild(el('span', 'badge ' + (v.type === 'ready' ? 'ready' : 'plain'), v.typeLabel));
     tr.appendChild(tdT);
     const tdC = el('td');
-    const a = el('a', 'cta', 'View stones');
+    const a = el('a', 'cta', 'View stones →');
     a.href = v.url; a.target = '_blank'; a.rel = 'noopener';
     tdC.appendChild(a);
     tr.appendChild(tdC);
     tbody.appendChild(tr);
   });
-  document.getElementById('priceSource').textContent =
-    '*Indicative lab-grown round-stone ranges, mainstream quality band: thediamondprice.com 2026 guides (Sep 2026: 0.5ct $330-700, 1.5ct $810-950; Jul 2026: 2ct $1,500-2,650), engagementringreviews.com 2026 (1ct $500-1,200), CaratRadar Aug 2026 (3ct avg $2,192). Fancy shapes, natural diamonds and settings differ; the vendor deeplink shows live listings. Filter deeplinks use each vendor\'s public URL parameters; affiliate parameters can be added once enrolled.';
+}
+
+/* ---------------- composer (cinematic DOF on desktop) ---------------- */
+let composer = null, bokehPass = null;
+const wantsDOF = !matchMedia('(max-width: 768px)').matches;
+if (wantsDOF) {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  bokehPass = new BokehPass(scene, camera, { focus: 42, aperture: 0.00032, maxblur: 0.0075 });
+  composer.addPass(bokehPass);
+  composer.addPass(new OutputPass());
 }
 
 /* ---------------- resize / loop ---------------- */
 function resize() {
   const w = container.clientWidth, h = container.clientHeight;
   renderer.setSize(w, h);
+  if (composer) composer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
@@ -494,8 +542,8 @@ function syncControls() {
   setSeg('shape', Object.keys(SHAPES), state.shape);
   setSeg('setting', Object.keys(SETTINGS), state.setting);
   setSeg('ringsize', SIZES, state.size);
-  const w = document.getElementById('width'); w.value = state.width;
-  const c = document.getElementById('carat'); c.value = state.carat;
+  document.getElementById('width').value = state.width;
+  document.getElementById('carat').value = state.carat;
   document.getElementById('widthVal').textContent = state.width.toFixed(1);
   document.getElementById('caratVal').textContent = state.carat.toFixed(1);
 }
@@ -505,4 +553,4 @@ window.addEventListener('hashchange', () => { if (writingHash) return; loadFromH
 buildControls();
 rebuild();
 resize();
-renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+renderer.setAnimationLoop(() => { controls.update(); if (composer) composer.render(); else renderer.render(scene, camera); });
