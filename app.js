@@ -386,17 +386,17 @@ const VENDOR_SHAPES = {
   emerald:  { ja: 'Emerald',  bn: 'emerald-cut',   be: 'Emerald' },
   pear:     { ja: 'Pear',     bn: 'pear-shaped',   be: 'Pear' },
 };
-// indicative lab-grown stone price ranges (USD), per carat bracket, G/VS1-quality guide figures
+// indicative lab-grown round-stone price ranges (USD), Sept 2026 sources (see footnote)
 const PRICE_BRACKETS = [
-  { max: 0.6,  low: 250,  high: 600 },
-  { max: 1.1,  low: 500,  high: 1200 },
-  { max: 1.6,  low: 800,  high: 1900 },
-  { max: 2.1,  low: 1000, high: 2600 },
-  { max: 3.1,  low: 1500, high: 4200 },
+  { max: 0.6,  text: '$330 - $700' },
+  { max: 1.1,  text: '$500 - $1,200' },
+  { max: 1.6,  text: '$810 - $950' },
+  { max: 2.1,  text: '$1,500 - $2,650' },
+  { max: 3.1,  text: 'avg ~$2,200' },
 ];
 function priceRange() {
   const b = PRICE_BRACKETS.find(b => state.carat <= b.max) || PRICE_BRACKETS[PRICE_BRACKETS.length - 1];
-  return `$${b.low.toLocaleString()} - $${b.high.toLocaleString()}`;
+  return b.text;
 }
 
 function vendorLinks() {
@@ -444,7 +444,7 @@ function updateVendors() {
     tbody.appendChild(tr);
   });
   document.getElementById('priceSource').textContent =
-    '*Indicative range for a lab-grown stone of this size (G color, VS clarity, excellent cut) based on 2026 online-retail guides; natural diamonds and finished settings cost more. Filter deeplinks use each vendor\'s public URL parameters; affiliate parameters can be added once enrolled.';
+    '*Indicative lab-grown round-stone ranges, mainstream quality band: thediamondprice.com 2026 guides (Sep 2026: 0.5ct $330-700, 1.5ct $810-950; Jul 2026: 2ct $1,500-2,650), engagementringreviews.com 2026 (1ct $500-1,200), CaratRadar Aug 2026 (3ct avg $2,192). Fancy shapes, natural diamonds and settings differ; the vendor deeplink shows live listings. Filter deeplinks use each vendor\'s public URL parameters; affiliate parameters can be added once enrolled.';
 }
 
 /* ---------------- resize / loop ---------------- */
